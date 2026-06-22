@@ -1,0 +1,8 @@
+{
+  "name": "amg-forecast-tool",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
