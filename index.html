@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forecast Reconciliation System — AMG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #0B1F3A;
+  --white: #ffffff;
+  --gray-50: #F4F6F9;
+  --gray-100: #E8ECF2;
+  --gray-200: #D1D9E6;
+  --gray-400: #94A3B8;
+  --gray-600: #475569;
+  --gray-800: #1E293B;
+  --amber: #D97706;
+  --green: #15803D;
+  --green-light: #DCFCE7;
+  --red: #B91C1C;
+  --red-light: #FEE2E2;
+  --blue: #1D4ED8;
+  --blue-light: #DBEAFE;
+  --orange-light: #FED7AA;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.topbar {
+  background: var(--navy);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 2px solid var(--amber);
+}
+
+.topbar-left { display: flex; align-items: center; gap: 20px; }
+.company-name { font-size: 13px; font-weight: 700; color: var(--white); letter-spacing: 0.12em; text-transform: uppercase; }
+.topbar-div { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+.tool-name { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.55); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.env-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--amber); color: var(--navy); padding: 3px 8px; border-radius: 2px; }
+.version { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+.main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+.page-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--gray-200); }
+.page-eyebrow { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.4px; margin-bottom: 6px; }
+.page-desc { font-size: 13px; color: var(--gray-600); max-width: 680px; line-height: 1.6; }
+
+.section { background: var(--white); border: 1px solid var(--gray-200); border-radius: 4px; margin-bottom: 1px; }
+.section-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--gray-100); background: var(--gray-50); }
+.section-num { width: 22px; height: 22px; background: var(--navy); color: var(--white); border-radius: 2px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-title { font-size: 12px; font-weight: 600; color: var(--gray-800); text-transform: uppercase; letter-spacing: 0.07em; }
+.section-body { padding: 20px; }
+
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.upload-zone {
+  border: 1.5px dashed var(--gray-200);
+  border-radius: 3px;
+  padding: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--white);
+}
+.upload-zone:hover { border-color: var(--navy); background: var(--gray-50); }
+.upload-zone.loaded { border-color: var(--green); border-style: solid; background: #F0FDF4; }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-type { font-size: 10px; font-weight: 700; color: var(--gray-400); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.upload-label { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 2px; }
+.upload-hint { font-size: 11px; color: var(--gray-400); font-family: 'SF Mono', monospace; }
+.upload-confirm { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 6px; display: none; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+
+select, input[type=text] {
+  width: 100%; font-size: 13px; font-family: inherit;
+  padding: 8px 10px; border: 1px solid var(--gray-200);
+  border-radius: 3px; background: var(--white); color: var(--gray-800);
+  outline: none; transition: border-color 0.15s; -webkit-appearance: none;
+}
+select:focus, input[type=text]:focus { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(11,31,58,0.08); }
+
+.run-btn {
+  width: 100%; padding: 11px 16px; font-size: 13px; font-weight: 700;
+  font-family: inherit; letter-spacing: 0.05em; text-transform: uppercase;
+  border-radius: 3px; border: none; background: var(--amber); color: var(--navy);
+  cursor: pointer; transition: background 0.15s; margin-top: 16px;
+}
+.run-btn:hover:not(:disabled) { background: #B45309; color: var(--white); }
+.run-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.status-row {
+  display: flex; align-items: flex-start; gap: 10px; margin-top: 12px;
+  padding: 10px 14px; border-radius: 3px; border-left: 3px solid var(--gray-200);
+  background: var(--gray-50); font-size: 12px; color: var(--gray-600);
+  min-height: 38px; white-space: pre-wrap; line-height: 1.6;
+}
+.status-row.success { border-left-color: var(--green); background: var(--green-light); color: #14532D; }
+.status-row.error { border-left-color: var(--red); background: var(--red-light); color: #7F1D1D; }
+
+.results-section { display: none; margin-top: 1.5rem; }
+.results-section.show { display: block; }
+
+.results-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
+.results-title { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.07em; }
+.results-meta { font-size: 11px; color: var(--gray-400); font-family: 'SF Mono', monospace; }
+
+.metrics-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1.25rem; }
+.metric { background: var(--white); border: 1px solid var(--gray-200); border-radius: 3px; padding: 12px 14px; }
+.metric-label { font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.metric-value { font-size: 26px; font-weight: 700; color: var(--gray-800); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.metric-value.blue { color: var(--blue); }
+.metric-value.green { color: var(--green); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red { color: var(--red); }
+
+.table-container { border: 1px solid var(--gray-200); border-radius: 3px; overflow: auto; margin-bottom: 1.25rem; max-height: 400px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+thead th { background: var(--navy); color: rgba(255,255,255,0.75); padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-800); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--gray-50) !important; }
+tbody tr.row-over td { background: #FFF7ED; }
+tbody tr.row-under td { background: #F0FDF4; }
+tbody tr.row-nosap td { background: #FAFAFA; }
+
+.mono-cell { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; color: var(--gray-600); }
+.desc-cell { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.num-cell { text-align: right; }
+
+.badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.b-written { background: #BBF7D0; color: #14532D; }
+.b-over { background: var(--orange-light); color: #92400E; }
+.b-under { background: var(--blue-light); color: #1E3A8A; }
+.b-match { background: var(--green-light); color: var(--green); }
+.b-nosap { background: var(--gray-100); color: var(--gray-600); }
+
+.dl-section { background: var(--navy); border-radius: 3px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.dl-info { flex: 1; }
+.dl-title { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 3px; }
+.dl-note { font-size: 11px; color: rgba(255,255,255,0.4); }
+.dl-btn { padding: 9px 20px; font-size: 12px; font-weight: 700; font-family: inherit; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 2px; border: none; background: var(--amber); color: var(--navy); cursor: pointer; white-space: nowrap; transition: background 0.15s; flex-shrink: 0; }
+.dl-btn:hover:not(:disabled) { background: #F59E0B; }
+.dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+.footer-left { font-size: 11px; color: var(--gray-400); }
+.footer-right { font-size: 11px; color: var(--gray-400); font-family: monospace; }
+
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.15); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 640px) {
+  .topbar { padding: 0 1rem; }
+  .main { padding: 1rem 1rem 3rem; }
+  .upload-grid, .form-row { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .dl-section { flex-direction: column; align-items: flex-start; }
+  .topbar-right { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-left">
+    <span class="company-name">AMG</span>
+    <div class="topbar-div"></div>
+    <span class="tool-name">Forecast Reconciliation System</span>
+  </div>
+  <div class="topbar-right">
+    <span class="env-badge">Internal</span>
+    <span class="version">v2.1</span>
+  </div>
+</nav>
+
+<main class="main">
+
+  <div class="page-header">
+    <div class="page-eyebrow">Operations / Supply Chain</div>
+    <h1 class="page-title">SAP Actuals → Forecast Write-Back</h1>
+    <p class="page-desc">Upload the SAP monthly sales export and the AMG master forecast workbook. The system matches items by item number, extracts actual units for the selected period, and writes them into the ACTUAL SHIP row only. Every formula, cell style, merged cell, and column width is preserved exactly.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <span class="section-title">Upload Source Files</span>
+    </div>
+    <div class="section-body">
+      <div class="upload-grid">
+        <div class="upload-zone" id="box-sap">
+          <div class="upload-type">SAP Export</div>
+          <div class="upload-label">Monthly Sales Report</div>
+          <div class="upload-hint">Sales_Analysis_Report_by_Items_Monthly.xlsx</div>
+          <div class="upload-confirm" id="sap-confirm"></div>
+          <input type="file" accept=".xlsx,.xls" onchange="loadFile('sap',this)">
+        </div>
+        <div class="upload-zone" id="box-fc">
+          <div class="upload-type">Forecast Workbook</div>
+          <div class="upload-label">AMG Master Forecast</div>
+          <div class="upload-hint">AMG_FORCASTING_MAIN_SHEET.xlsx</div>
+          <div class="upload-confirm" id="fc-confirm"></div>
+          <input type="file" accept=".xlsx,.xls" onchange="loadFile('fc',this)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <span class="section-title">Configure Reconciliation Parameters</span>
+    </div>
+    <div class="section-body">
+      <div class="form-row">
+        <div class="field">
+          <label>Reporting Period</label>
+          <select id="month-sel">
+            <option value="1_2026">January 2026</option>
+            <option value="2_2026">February 2026</option>
+            <option value="3_2026">March 2026</option>
+            <option value="4_2026">April 2026</option>
+            <option value="5_2026">May 2026</option>
+            <option value="6_2026" selected>June 2026</option>
+            <option value="7_2026">July 2026</option>
+            <option value="8_2026">August 2026</option>
+            <option value="9_2026">September 2026</option>
+            <option value="10_2026">October 2026</option>
+            <option value="11_2026">November 2026</option>
+            <option value="12_2026">December 2026</option>
+            <option value="1_2027">January 2027</option>
+            <option value="2_2027">February 2027</option>
+            <option value="3_2027">March 2027</option>
+            <option value="4_2027">April 2027</option>
+            <option value="5_2027">May 2027</option>
+            <option value="6_2027">June 2027</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Forecast Worksheet Tab</label>
+          <input type="text" id="tab-name" value="DG FAVORITES-BRIT" placeholder="Enter exact tab name">
+        </div>
+      </div>
+
+      <button class="run-btn" id="run-btn" disabled onclick="run()">
+        Run Reconciliation
+      </button>
+      <div class="status-row" id="status">Upload both files to begin.</div>
+    </div>
+  </div>
+
+  <div class="results-section" id="results-section">
+    <div class="results-header">
+      <span class="results-title">Reconciliation Output</span>
+      <span class="results-meta" id="results-meta"></span>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric"><div class="metric-label">Written</div><div class="metric-value blue" id="m-written">—</div></div>
+      <div class="metric"><div class="metric-label">Over Forecast</div><div class="metric-value amber" id="m-over">—</div></div>
+      <div class="metric"><div class="metric-label">Under Forecast</div><div class="metric-value amber" id="m-under">—</div></div>
+      <div class="metric"><div class="metric-label">On Target</div><div class="metric-value green" id="m-match">—</div></div>
+      <div class="metric"><div class="metric-label">No SAP Data</div><div class="metric-value red" id="m-nosap">—</div></div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>AMG Code</th>
+            <th>Description</th>
+            <th class="num-cell">Forecast</th>
+            <th class="num-cell">SAP Actual</th>
+            <th class="num-cell">Variance</th>
+            <th class="num-cell">Var %</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="result-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="dl-section">
+      <div class="dl-info">
+        <div class="dl-title">Updated Forecast Workbook Ready</div>
+        <div class="dl-note">Only ACTUAL SHIP values were changed. All formulas, formatting, merged cells, and tabs are intact.</div>
+      </div>
+      <button class="dl-btn" id="dl-btn" onclick="downloadFile()" disabled>
+        Download Updated File
+      </button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span class="footer-left">AMG Internal Systems &bull; Forecast Reconciliation &bull; Authorized personnel only</span>
+    <span class="footer-right">v2.1.0</span>
+  </footer>
+
+</main>
+
+<script>
+const MONTH_NAMES = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let sapFile=null, fcFile=null, outputB64=null, outputFilename='';
+
+function loadFile(type, inp) {
+  const file = inp.files[0]; if(!file) return;
+  if(type==='sap') {
+    sapFile=file;
+    document.getElementById('sap-confirm').textContent='✓ '+file.name;
+    document.getElementById('sap-confirm').style.display='block';
+    document.getElementById('box-sap').classList.add('loaded');
+  } else {
+    fcFile=file;
+    document.getElementById('fc-confirm').textContent='✓ '+file.name;
+    document.getElementById('fc-confirm').style.display='block';
+    document.getElementById('box-fc').classList.add('loaded');
+  }
+  if(sapFile&&fcFile) {
+    document.getElementById('run-btn').disabled=false;
+    setStatus('Files loaded. Configure parameters and click Run Reconciliation.','');
+  }
+}
+
+function setStatus(msg,type) {
+  const el=document.getElementById('status');
+  el.textContent=msg;
+  el.className='status-row'+(type?' '+type:'');
+}
+
+function toB64(file) {
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function fmt(n){return n!=null?Number(n).toLocaleString():'—';}
+function fmtVar(n){return n!=null?(n>0?'+':'')+Number(n).toLocaleString():'—';}
+function fmtPct(n){return n!=null?(n>0?'+':'')+n.toFixed(1)+'%':'—';}
+
+async function run() {
+  if(!sapFile||!fcFile) return;
+  const [monthNum,yearNum]=document.getElementById('month-sel').value.split('_').map(Number);
+  const tab=document.getElementById('tab-name').value.trim();
+  const btn=document.getElementById('run-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Processing...';
+  document.getElementById('results-section').classList.remove('show');
+  document.getElementById('dl-btn').disabled=true;
+  outputB64=null;
+
+  try {
+    setStatus('Reading files...','');
+    const [sapB64,fcB64]=await Promise.all([toB64(sapFile),toB64(fcFile)]);
+
+    setStatus('Sending to reconciliation engine...','');
+    const resp=await fetch('/api/reconcile',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({sap_b64:sapB64,fc_b64:fcB64,tab,month:monthNum,year:yearNum})
+    });
+
+    const data=await resp.json();
+    if(!resp.ok||data.error) {
+      setStatus('Error: '+(data.error||'Unknown error occurred'),'error');
+      btn.disabled=false;btn.textContent='Run Reconciliation';return;
+    }
+
+    outputB64=data.file_b64;
+    outputFilename=`AMG_Forecast_Updated_${MONTH_NAMES[monthNum]}_${yearNum}.xlsx`;
+
+    document.getElementById('m-written').textContent=data.written;
+    document.getElementById('m-over').textContent=data.over;
+    document.getElementById('m-under').textContent=data.under;
+    document.getElementById('m-match').textContent=data.match;
+    document.getElementById('m-nosap').textContent=data.no_sap;
+    document.getElementById('results-meta').textContent=
+      `${data.sheet}  ·  ${data.month}  ·  ${data.items_found} items processed`;
+
+    const tbody=document.getElementById('result-tbody');
+    tbody.innerHTML='';
+    (data.results||[]).forEach(l=>{
+      const tr=document.createElement('tr');
+      if(l.status==='no_sap') tr.classList.add('row-nosap');
+      else if(l.status==='over') tr.classList.add('row-over');
+      else if(l.status==='under') tr.classList.add('row-under');
+      let badge='';
+      if(l.written) badge='<span class="badge b-written">✓ Written</span>';
+      else if(l.status==='no_sap') badge='<span class="badge b-nosap">No SAP Data</span>';
+      else if(l.status==='over') badge='<span class="badge b-over">Over</span>';
+      else if(l.status==='under') badge='<span class="badge b-under">Under</span>';
+      else badge='<span class="badge b-match">On Target</span>';
+      tr.innerHTML=`
+        <td class="mono-cell">${l.item_num||'—'}</td>
+        <td class="mono-cell">${l.amg}</td>
+        <td class="desc-cell" title="${l.description}">${l.description}</td>
+        <td class="num-cell">${fmt(l.forecast)}</td>
+        <td class="num-cell"><strong>${fmt(l.actual)}</strong></td>
+        <td class="num-cell">${fmtVar(l.variance)}</td>
+        <td class="num-cell">${fmtPct(l.variance_pct)}</td>
+        <td>${badge}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('results-section').classList.add('show');
+    document.getElementById('dl-btn').disabled=false;
+    setStatus(`Complete. ${data.written} actuals written to "${data.sheet}" for ${data.month}. Download the updated workbook below.`,'success');
+
+  } catch(e) {
+    setStatus('Network error: '+e.message+'\n\nVerify the deployment is running and try again.','error');
+  }
+
+  btn.disabled=false;
+  btn.textContent='Run Reconciliation';
+}
+
+function downloadFile() {
+  if(!outputB64) return;
+  const bytes=atob(outputB64);
+  const arr=new Uint8Array(bytes.length);
+  for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+  const blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=outputFilename; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
